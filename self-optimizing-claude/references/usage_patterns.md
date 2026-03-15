@@ -1,375 +1,72 @@
-# Self-Optimizing Claude - Usage Patterns
-
-Advanced usage patterns for integrating and maximizing the self-optimizing system.
-
-## Integration Patterns
-
-### Pattern 1: Session-Based Learning
-
-```python
-# Initialize at session start
-claude = SelfOptimizingClaude(log_file="session_2024_03_15.jsonl")
-optimizer = ClaudeResponseOptimizer(claude)
-
-# Use throughout session
-for query in user_queries:
-    response = generate_response(query)
-    optimized, metadata = optimizer.optimize_response(
-        query=query,
-        draft_response=response,
-        context=get_context()
-    )
-    send_to_user(optimized)
-
-# Review performance at end
-report = claude.generate_performance_report()
-save_report(report, "performance_report.json")
-```
-
-### Pattern 2: Cross-Session Persistence
-
-```python
-# Session 1: Initial learning
-claude_v1 = SelfOptimizingClaude(log_file="user123_interactions.jsonl")
-# ... interactions ...
-config = claude_v1.export_optimization_config()
-
-# Session 2: Load learned preferences
-claude_v2 = SelfOptimizingClaude(log_file="user123_interactions.jsonl")
-claude_v2.style_preferences = {
-    InteractionType(k): ResponseStyle(v)
-    for k, v in config['style_preferences'].items()
-}
-# Starts with learned preferences!
-```
-
-### Pattern 3: Multi-User Personalization
-
-```python
-# Each user gets separate learning
-user_claudes = {}
-
-def get_user_claude(user_id: str) -> SelfOptimizingClaude:
-    if user_id not in user_claudes:
-        user_claudes[user_id] = SelfOptimizingClaude(
-            log_file=f"users/{user_id}/interactions.jsonl"
-        )
-    return user_claudes[user_id]
-
-# User-specific optimization
-claude = get_user_claude(user_id)
-# ... interactions ...
-```
-
-## Performance Analysis Patterns
-
-### Pattern 1: Satisfaction Trend Analysis
-
-```python
-report = claude.generate_performance_report()
-trends = report['recent_trends']
-
-if trends['satisfaction_trend'] == 'improving':
-    print(f"Improvement: {trends['improvement']:.2f} points")
-elif trends['satisfaction_trend'] == 'declining':
-    print(f"Decline: {trends['improvement']:.2f} points - adjust strategy")
-```
-
-### Pattern 2: Style Effectiveness Comparison
-
-```python
-style_stats = report['response_style_stats']
-
-# Find best performing style
-best_style = max(
-    style_stats.items(),
-    key=lambda x: x[1]['avg_satisfaction'] if x[1]['avg_satisfaction'] else 0
-)
-
-print(f"Best style: {best_style[0]}")
-print(f"Average satisfaction: {best_style[1]['avg_satisfaction']:.2f}")
-```
-
-### Pattern 3: Type-Specific Performance
-
-```python
-type_stats = report['interaction_type_stats']
-
-# Identify weak areas
-weak_areas = [
-    (int_type, stats)
-    for int_type, stats in type_stats.items()
-    if stats['avg_satisfaction'] and stats['avg_satisfaction'] < 3.5
-]
-
-for int_type, stats in weak_areas:
-    print(f"Needs improvement: {int_type}")
-    print(f"  Current satisfaction: {stats['avg_satisfaction']:.2f}")
-    print(f"  Success rate: {stats['success_rate']:.1%}")
-```
-
-## Optimization Strategies
-
-### Strategy 1: Active Learning
-
-```python
-# Occasionally test alternative styles
-import random
-
-def should_experiment():
-    return random.random() < 0.1  # 10% of the time
-
-def get_response_style(query: str) -> ResponseStyle:
-    if should_experiment():
-        # Try random style to gather data
-        return random.choice(list(ResponseStyle))
-    else:
-        # Use learned preference
-        return claude.get_optimal_response_style(query)
-```
-
-### Strategy 2: Context-Aware Optimization
-
-```python
-# Adjust style based on additional context
-def get_context_aware_style(query: str, urgency: str) -> ResponseStyle:
-    base_style = claude.get_optimal_response_style(query)
-
-    if urgency == "high":
-        # Override to direct for urgent queries
-        return ResponseStyle.DIRECT
-    elif urgency == "low":
-        # Use more detailed style for learning
-        return ResponseStyle.DETAILED
-    else:
-        return base_style
-```
-
-### Strategy 3: Feedback-Driven Tuning
-
-```python
-# After each interaction, collect feedback
-def collect_and_apply_feedback(query: str, response: str, rating: int):
-    # Record with satisfaction score
-    claude.record_interaction(
-        user_query=query,
-        response=response,
-        tool_calls=0,
-        context_tokens=1000,
-        satisfaction=rating
-    )
-
-    # If low rating, trigger immediate optimization
-    if rating < 3.0:
-        claude._optimize_style_preferences()
-        print("Preferences updated based on feedback")
-```
-
-## Data Export Patterns
-
-### Pattern 1: Performance Dashboard
-
-```python
-def create_dashboard_data(claude: SelfOptimizingClaude) -> dict:
-    report = claude.generate_performance_report()
-
-    return {
-        "overview": {
-            "total_interactions": report['total_interactions'],
-            "avg_satisfaction": report['overall_performance']['avg_satisfaction'],
-            "success_rate": report['overall_performance']['success_rate']
-        },
-        "by_type": report['interaction_type_stats'],
-        "by_style": report['response_style_stats'],
-        "trends": report['recent_trends'],
-        "preferences": report['current_style_preferences']
-    }
-
-# Export for visualization
-dashboard_data = create_dashboard_data(claude)
-with open("dashboard.json", "w") as f:
-    json.dump(dashboard_data, f, indent=2)
-```
-
-### Pattern 2: CSV Export for Analysis
-
-```python
-import csv
-
-def export_interactions_to_csv(claude: SelfOptimizingClaude, output_file: str):
-    with open(output_file, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(['timestamp', 'type', 'style', 'satisfaction',
-                        'response_time', 'success', 'tokens'])
-
-        for record in claude.interactions:
-            writer.writerow([
-                record.timestamp,
-                record.interaction_type,
-                record.response_style,
-                record.user_satisfaction,
-                record.time_to_response,
-                record.success,
-                record.context_tokens_used
-            ])
-
-export_interactions_to_csv(claude, "analysis.csv")
-```
-
-### Pattern 3: Config Backup and Restore
-
-```python
-def backup_config(claude: SelfOptimizingClaude, backup_path: str):
-    config = claude.export_optimization_config()
-    with open(backup_path, 'w') as f:
-        json.dump(config, f, indent=2)
-
-def restore_config(claude: SelfOptimizingClaude, backup_path: str):
-    with open(backup_path, 'r') as f:
-        config = json.load(f)
-
-    claude.style_preferences = {
-        InteractionType(k): ResponseStyle(v)
-        for k, v in config['style_preferences'].items()
-    }
-
-# Usage
-backup_config(claude, "config_backup_2024_03_15.json")
-# Later...
-restore_config(claude, "config_backup_2024_03_15.json")
-```
-
-## Best Practices
-
-### 1. Data Collection
-
-- Collect satisfaction scores consistently
-- Log every interaction, even failed ones
-- Include context about the environment
-
-### 2. Optimization Frequency
-
-- Default: Every 10 interactions
-- High-volume: Every 50-100 interactions
-- Low-volume: After 5 interactions
-
-### 3. Config Management
-
-- Backup configs before major changes
-- Version control your configs
-- Label configs with dates/contexts
-
-### 4. Performance Monitoring
-
-- Review reports weekly
-- Track trends over time
-- Compare before/after experiments
-
-### 5. Privacy Considerations
-
-- Sanitize sensitive data before logging
-- Encrypt log files if needed
-- Comply with data retention policies
-
-## Troubleshooting
-
-### Issue: Low satisfaction scores
-
-**Diagnosis:**
-```python
-report = claude.generate_performance_report()
-print(f"Overall: {report['overall_performance']['avg_satisfaction']}")
-```
-
-**Solutions:**
-- Review which types have lowest satisfaction
-- Experiment with different styles for those types
-- Collect more feedback to validate trends
-
-### Issue: No learning happening
-
-**Diagnosis:**
-```python
-print(f"Total interactions: {len(claude.interactions)}")
-print(f"Style preferences: {claude.style_preferences}")
-```
-
-**Solutions:**
-- Ensure satisfaction scores are being recorded
-- Check that optimization is triggering (every 10 interactions)
-- Verify interaction types are detected correctly
-
-### Issue: High memory usage
-
-**Solution:**
-```python
-# Archive old interactions
-def archive_interactions(claude: SelfOptimizingClaude, cutoff_days: int):
-    cutoff_time = time.time() - (cutoff_days * 86400)
-    recent = [i for i in claude.interactions if i.timestamp > cutoff_time]
-    archived = [i for i in claude.interactions if i.timestamp <= cutoff_time]
-
-    # Save archived
-    with open(f"archived_{cutoff_days}days.jsonl", 'w') as f:
-        for record in archived:
-            f.write(json.dumps(asdict(record)) + '\n')
-
-    # Keep only recent
-    claude.interactions = recent
-```
-
-## Advanced Topics
-
-### Custom Interaction Types
-
-```python
-class CustomInteractionType(InteractionType):
-    CODE_REVIEW = "code_review"
-    DOCUMENTATION = "documentation"
-
-# Extend detection logic
-def _detect_interaction_type(self, query: str) -> InteractionType:
-    query_lower = query.lower()
-
-    if "review" in query_lower and "code" in query_lower:
-        return CustomInteractionType.CODE_REVIEW
-    elif "document" in query_lower:
-        return CustomInteractionType.DOCUMENTATION
-
-    # ... rest of detection logic
-```
-
-### Multi-Objective Optimization
-
-```python
-def calculate_weighted_score(record: InteractionRecord) -> float:
-    satisfaction_weight = 0.5
-    speed_weight = 0.3
-    efficiency_weight = 0.2
-
-    score = (
-        (record.user_satisfaction or 3.0) * satisfaction_weight +
-        (1.0 / (record.time_to_response + 1)) * speed_weight +
-        (1.0 / (record.context_tokens_used / 1000 + 1)) * efficiency_weight
-    )
-    return score
-```
-
-### A/B Testing Framework
-
-```python
-def run_ab_test(claude: SelfOptimizingClaude, query: str, style_a: ResponseStyle, style_b: ResponseStyle):
-    # Force both styles
-    response_a = apply_style(generate_response(query), style_a)
-    response_b = apply_style(generate_response(query), style_b)
-
-    # Present both and collect ratings
-    rating_a = collect_rating(query, response_a)
-    rating_b = collect_rating(query, response_b)
-
-    return {
-        "style_a": {"style": style_a.value, "rating": rating_a},
-        "style_b": {"style": style_b.value, "rating": rating_b},
-        "winner": style_a if rating_a > rating_b else style_b
-    }
-```
+# Claude 交互模式与优化参考
+
+## 1. 常见查询类型及其特点
+
+为了有效优化 Claude 的表现，我们首先需要理解用户常见的查询类型及其内在需求。
+
+### 1.1 代码生成 (Code Generation)
+*   **用户需求**: 快速、准确地生成代码片段、函数或完整脚本。
+*   **关注点**: 代码质量（可读性、效率）、正确性、语言兼容性、注释清晰度。
+*   **优化方向**: 调整代码详细程度、注释密度、错误处理机制、特定语言的最佳实践。
+
+### 1.2 代码调试 (Debugging)
+*   **用户需求**: 识别代码中的错误、解释错误原因、提供修复建议。
+*   **关注点**: 错误分析的深度、解决方案的直接性、逐步指导的清晰度。
+*   **优化方向**: 错误解释的详细程度、诊断流程、提供替代方案。
+
+### 1.3 概念解释 (Explanation)
+*   **用户需求**: 清晰、简洁地解释复杂概念、技术术语或算法。
+*   **关注点**: 准确性、易懂性、示例的恰当性、结构化程度。
+*   **优化方向**: 解释的深度、使用类比、提供代码示例、多媒体辅助（如果可能）。
+
+### 1.4 代码重构 (Refactoring)
+*   **用户需求**: 改进现有代码的结构、可读性、可维护性，但不改变其外部行为。
+*   **关注点**: 重构方案的安全性、性能影响、遵循最佳实践、逐步指导。
+*   **优化方向**: 重构建议的粒度、提供前后对比、解释重构理由。
+
+### 1.5 性能优化 (Optimization)
+*   **用户需求**: 提升代码或系统的运行效率、资源利用率。
+*   **关注点**: 优化方案的有效性、潜在风险、性能指标分析。
+*   **优化方向**: 优化策略的侵入性、提供基准测试建议、考虑不同环境下的性能。
+
+## 2. 性能指标与反馈机制
+
+### 2.1 核心性能指标
+*   **用户满意度 (User Satisfaction)**: 最重要的指标，可以通过以下方式评估：
+    *   **显式反馈**: 用户评分 (1-5星)、点赞/点踩、直接评论。
+    *   **隐式信号**: 会话时长、后续提问的性质（澄清 vs. 新任务）、任务完成情况（用户是否接受了建议）。
+*   **响应时间 (Response Time)**: 从接收请求到生成完整响应的时间。过长可能导致用户流失。
+*   **任务成功率 (Task Success Rate)**: 用户请求是否得到有效解决。例如，生成的代码是否可运行、调试建议是否修复了问题。
+*   **相关性 (Relevance)**: 响应与用户查询的匹配程度。
+*   **准确性 (Accuracy)**: 响应内容的正确性。
+
+### 2.2 反馈收集策略
+*   **会话结束问卷**: 简单快速的满意度调查。
+*   **实时反馈按钮**: 在每个响应旁提供“有用/无用”按钮。
+*   **行为分析**: 监控用户如何与响应互动（例如，是否复制了代码，是否追问）。
+
+## 3. 优化策略与风格调整
+
+### 3.1 风格偏好维度
+*   **详细程度**: 简洁 vs. 详细。
+*   **注释密度**: 代码中注释的数量和深度。
+*   **解释深度**: 概念解释的复杂程度。
+*   **逐步指导**: 是否提供分步操作说明。
+*   **形式化程度**: 正式 vs. 非正式的语言风格。
+*   **安全检查**: 在重构或优化时是否强调潜在风险。
+*   **侵入性**: 优化建议对现有代码改动的大小。
+
+### 3.2 优化决策逻辑 (示例)
+*   **低满意度 + 冗长响应时间**: 尝试降低详细程度和解释深度。
+*   **低满意度 + 任务失败**: 尝试增加安全检查、提供更明确的逐步指导。
+*   **高满意度 + 快速响应**: 保持当前风格，并尝试将其推广到类似场景。
+*   **特定查询类型表现不佳**: 针对该类型调整其特有的风格偏好。
+
+## 4. 持续学习与迭代周期
+
+优化是一个持续的过程，需要定期回顾和调整。建议的迭代周期包括：
+1.  **数据收集**: 持续进行。
+2.  **数据分析**: 每周或每达到一定数据量进行。
+3.  **策略调整**: 根据分析结果，每 1-2 周进行一次小幅调整。
+4.  **效果评估**: 调整后持续监控，验证新策略的有效性。
+5.  **配置备份**: 每次重大调整前备份当前配置。

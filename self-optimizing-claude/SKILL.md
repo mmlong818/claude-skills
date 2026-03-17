@@ -8,13 +8,28 @@ description: |
   3. Continuously improve responses based on historical data.
   4. Export and import optimization configurations across sessions.
   This skill transforms Claude from a static assistant into an adaptive system that learns from every interaction.
-version: 0.2.0
+version: 0.3.0
 tags:
   - optimization
   - self-improvement
   - learning
   - performance
   - adaptive
+---
+
+## 更新日志
+
+### v0.3.0
+- 修复 `_load_config` 中 `json.JSONDecodeError` 导致的无限递归 bug
+- 新增交互日志持久化（`interaction_logs.json`），跨会话保留历史数据
+- 新增回滚机制：每次保存配置前自动备份，支持 `rollback_config()` 一键回滚
+- 新增查询类型自动识别（`detect_query_type`），支持中英文关键词匹配
+- 新增 `generate_report()` 方法，生成 Markdown 格式优化总结报告
+- 优化 `generate_optimization_strategy`，覆盖更多查询类型的调整逻辑
+
+### v0.2.0
+- 初始实现：配置加载/保存、交互追踪、性能分析、导出/导入配置
+
 ---
 
 ## Skill: 自优化 Claude (Self-Optimizing Claude)

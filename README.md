@@ -18,6 +18,7 @@ Skills are loaded automatically when Claude detects a relevant task. They follow
 | Skill | Category | Description |
 |-------|----------|-------------|
 | [micro-drama-writer](./micro-drama-writer/) | Creative Writing | Professional micro-drama screenwriting for female-oriented emotional content. Covers modern romance, historical fantasy, time travel, revenge & rebirth genres. |
+| [presentation-coach](./presentation-coach/) | Productivity | Multi-framework presentation design covering 6 methodologies (Winston, Pyramid Principle, SCQA, Duarte, StoryBrand, SUCCESs). Auto-detects presentation type and routes to the correct framework. Delivers both slide content and speaker script. |
 
 *More skills coming soon.*
 
@@ -71,6 +72,7 @@ Skill 在 Claude 检测到相关任务时自动触发，采用渐进式加载机
 | Skill | 分类 | 说明 |
 |-------|------|------|
 | [micro-drama-writer](./micro-drama-writer/) | 创意写作 | 专业微短剧编剧助手，面向女性情感向内容。覆盖都市甜宠、古装虐恋、穿越重生、复仇逆袭等主流题材。 |
+| [presentation-coach](./presentation-coach/) | 效率工具 | 涵盖六大演讲框架（Winston、金字塔原理、SCQA、Duarte、StoryBrand、SUCCESs）的演讲设计工具。自动识别演讲类型并匹配对应框架，同时输出幻灯片页面内容与演讲逐字稿。 |
 
 *更多 Skills 持续更新中。*
 

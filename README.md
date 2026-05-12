@@ -19,8 +19,7 @@ Skills are loaded automatically when Claude detects a relevant task. They follow
 |-------|----------|-------------|
 | [micro-drama-writer](./micro-drama-writer/) | Creative Writing | Professional micro-drama screenwriting for female-oriented emotional content. Covers modern romance, historical fantasy, time travel, revenge & rebirth genres. |
 | [presentation-coach](./presentation-coach/) | Productivity | Multi-framework presentation design covering 6 methodologies (Winston, Pyramid Principle, SCQA, Duarte, StoryBrand, SUCCESs). Auto-detects presentation type and routes to the correct framework. Delivers both slide content and speaker script. |
-| meeting-analyst.skill | Productivity | Transform complex meeting transcripts into a detailed, executable action plan
-using a four-stage compression methodology. |
+| meeting-analyst.skill | Productivity | Transform complex meeting transcripts into a detailed, executable action plan using a four-stage compression methodology. |
 
 *More skills coming soon.*
 
